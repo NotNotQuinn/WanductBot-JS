@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "curlrequest": "^1.0.1",
+    "moment": "^2.29.1",
+    "promise": "^8.1.0",
+    "tmi.js": "^1.5.0"
+  }
+}

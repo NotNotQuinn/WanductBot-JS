@@ -1,6 +1,7 @@
 const tmi = require("tmi.js");
 const moment = require("moment");
 var fs = require('fs');
+var Promise = require('promise');
 var curl = require('curlrequest');
 const querystring = require('querystring');
 
@@ -46,25 +47,38 @@ client.on("emoteonly", (channel, enabled) => {
 
 // handle messages
 client.on("message", (channel, tags, message, self) => {
+    // Dont respond to messages from yourself
     if (self) return;
     let args = message.split(" ");
-    console.log(`args:${args}`)
 
     if( args[0].charAt(0).toLowerCase() == prefix) {
         // commands go here.
+        if ( args[0].toLowerCase() == prefix + "google") {
+            google_url = querystring.escape(args.join(" ").slice(prefix.length + "google ".length))
+            google_url = `https://google.com/search?q=${google_url}`
+            client.say(channel, `Here is your google search: ${google_url} :)`)
+        };
         if ( args[0].toLowerCase() == prefix + "8ball") {
             if (!args[1]) {client.say(channel, "/me No question privided! ⚠ ⚠ ");return;};
-            client.say(channel, "...")
-            curl.request({url: "https://aidenwallis.co.uk/twitch/8ball.php"}, (err, fact) => {
-                if (err) throw err;
-                client.say(channel, `/me :z ... ${fact}`)
+            client.say(channel, ":z loading...")
+            curl.request({url: "https://aidenwallis.co.uk/twitch/8ball.php"}, (err, responce) => {
+                    if (err) {
+                        client.say(channel, `/me Failed to get answer ⚠ ⚠ error: ${err}`)
+                        console.log(err)
+                    } else {
+                        client.say(channel, `/me ${responce} :z ...`)
+                    };
             });
         };
         if ( args[0].toLowerCase() == prefix + "randomfact") {
             client.say(channel, "...")
-            curl.request({url: "https://aidenwallis.co.uk/twitch/randomfact.php"}, (err, fact) => {
-                if (err) throw err;
-                client.say(channel, `PogChamp ! ! ! ${fact} NO WAY!!!`)
+            curl.request({url: "https://uselessfacts.jsph.pl/random.json?language=en"}, (err, data) => {
+                if (err) {
+                    client.say(channel, `/me Failed to get fact ⚠ ⚠ error: ${err}`)
+                    console.log(err)
+                } else {
+                    client.say(channel, `/me ${JSON.parse(data)['text']} :z ...`)
+                };
             });
         };
         if ( args[0].toLowerCase() == prefix + "help" || args[0].toLowerCase() == prefix + "commands") {client.say(channel, "help command coming soon BroBalt")}
@@ -122,7 +136,7 @@ client.on("message", (channel, tags, message, self) => {
     };
     // These are special commands.
     if (args[0] === "test" && tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot") {client.say(channel, "icles");};
-    if (args[0].toLowerCase() == ">ping" || args[0].toLowerCase() == prefix + "ping") {
+    if ((args[0].toLowerCase() == ">ping" || args[0].toLowerCase() == prefix + "ping") && (tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot")) {
         duration_bot_uptime = moment.duration(moment().diff(bot_start_time));
         bot_uptime_text = duration_bot_uptime.seconds() + " seconds"
         pings = pings + 1;
@@ -137,8 +151,21 @@ client.on("message", (channel, tags, message, self) => {
         };
         client.say(channel, `${pings} Pongs! B) PowerUpR Current prefix: [ ${prefix} ]. ${client.channels.length} channels joined. Bot online for ${bot_uptime_text}.`);
         fs.writeFile('pings.json', JSON.stringify([pings]), (err) => {if (err) throw err;});
+    } else if ((args[0].toLowerCase() == ">ping" || args[0].toLowerCase() == prefix + "ping") && (tags.username.toLowerCase() == "turtoise" || tags.username.toLowerCase() == "snappingbot")) {
+        duration_bot_uptime = moment.duration(moment().diff(bot_start_time));
+        bot_uptime_text = duration_bot_uptime.seconds() + " seconds"
+        if (duration_bot_uptime.minutes()) {
+            bot_uptime_text = duration_bot_uptime.minutes() + " minute(s) and " + bot_uptime_text
+        };
+        if (duration_bot_uptime.hours()) {
+            bot_uptime_text = duration_bot_uptime.hours() + " hour(s), " + bot_uptime_text
+        };
+        if (duration_bot_uptime.days()) {
+            bot_uptime_text = duration_bot_uptime.days() + " day(s), " + bot_uptime_text
+        };
+        client.say(channel, `Pong! B) PowerUpR Current prefix: [ ${prefix} ]. ${client.channels.length} channels joined. Bot online for ${bot_uptime_text}.`);
     };
 });
 
 // Connect the client to the server..
-client.connect();
+client.connect().catch();
