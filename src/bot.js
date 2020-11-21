@@ -1,6 +1,9 @@
 const tmi = require("tmi.js");
 const moment = require("moment");
 var fs = require('fs');
+var curl = require('curlrequest');
+const querystring = require('querystring');
+
 console.log("Thanks to @Nimmy0 on twitch for helping me out.");
 // He's a cool dude.
 
@@ -34,25 +37,67 @@ console.log(`channels: ${options.channels.join(", ")}`)
 
 let client = new tmi.client(options);
 
-client.on("message", (channel, user, message, self) => {
+// 
+client.on("emoteonly", (channel, enabled) => {
+    if (enabled) {
+        client.say(channel, "TriHard")
+    };
+});
+
+// handle messages
+client.on("message", (channel, tags, message, self) => {
     if (self) return;
     let args = message.split(" ");
     console.log(`args:${args}`)
 
     if( args[0].charAt(0).toLowerCase() == prefix) {
         // commands go here.
-        if ( args[0].toLowerCase() == prefix + "help")
-        if ( args[0].toLowerCase() == prefix + "botjoin" && user.username.toLowerCase() == "quinndt" ) {
-            if (!/(#|)[a-z0-9_]/gi.test(args[1])) {
-                client.say(channel, "That doesn't seem like a username... TPFufun");
-                return;
-            };
-            _channels = _channels.concat([`${args[1]}`])
-            fs.writeFile('channels-to-join.json', JSON.stringify(_channels), (err) => {
+        if ( args[0].toLowerCase() == prefix + "8ball") {
+            if (!args[1]) {client.say(channel, "/me No question privided! ⚠ ⚠ ");return;};
+            client.say(channel, "...")
+            curl.request({url: "https://aidenwallis.co.uk/twitch/8ball.php"}, (err, fact) => {
                 if (err) throw err;
-                client.join(`${args[1]}`)
-                client.say(channel, `I've joined the channel: [ ${args[1]} ]. monkaS 👉 ${client.channels.length + 1} channels total.`) // the channel length doesnt update in time, so I add one to it.
+                client.say(channel, `/me :z ... ${fact}`)
             });
+        };
+        if ( args[0].toLowerCase() == prefix + "randomfact") {
+            client.say(channel, "...")
+            curl.request({url: "https://aidenwallis.co.uk/twitch/randomfact.php"}, (err, fact) => {
+                if (err) throw err;
+                client.say(channel, `PogChamp ! ! ! ${fact} NO WAY!!!`)
+            });
+        };
+        if ( args[0].toLowerCase() == prefix + "help" || args[0].toLowerCase() == prefix + "commands") {client.say(channel, "help command coming soon BroBalt")}
+        if ( args[0].toLowerCase() == prefix + "bot" && tags.username.toLowerCase() == "quinndt" ) {
+            switch (args[1]) {
+                case "join":
+                    if (!/(#|)[a-z0-9_]/gi.test(args[2])) {
+                        client.say(channel, "That doesn't seem like a username... TPFufun");
+                    } else {
+                        _channels = _channels.concat([`${args[2]}`]);
+                        fs.writeFile('channels-to-join.json', JSON.stringify(_channels), (err) => {
+                            if (err) throw err;
+                            client.join(`${args[2]}`)
+                            client.say(channel, `I've joined the channel: [ ${args[2]} ]. monkaS 👉 ${client.channels.length + 1} channels total.`) // the channel length doesnt update in time, so I add one to it.
+                        });
+                    };
+                    break;
+                case "part":
+                    if (!/(#|)[a-z0-9_]/gi.test(args[2])) {
+                        client.say(channel, "That doesn't seem like a username... TPFufun");
+                        return;
+                    } else if (!args[2] in client.channels) {
+                        _channels = _channels.concat([`${args[2]}`]);
+                        fs.writeFile('channels-to-join.json', JSON.stringify(_channels), (err) => {
+                            if (err) throw err;
+                            client.join(`${args[2]}`)
+                            client.say(channel, `I've joined the channel: [ ${args[2]} ]. monkaS 👉 ${client.channels.length + 1} channels total.`) // the channel length doesnt update in time, so I add one to it.
+                        });
+                    };
+                    break;
+                default:
+                    client.say(channel, "/me Invalid subcommand. ⚠ ⚠ ")
+            };
         };
         if ( args[0].toLowerCase() == prefix + "set") {
             switch (args[1]) {
@@ -65,18 +110,18 @@ client.on("message", (channel, user, message, self) => {
                     }
                     break;
                 case undefined:
-                    client.say(channel, "WubTF I dont see anything to set..."); // no type provided
+                    client.say(channel, "/me No subcommand provided. ⚠ ⚠ ");
                     break;
                 default:
-                    client.say(channel, ":z I cant do that..."); // invalid type provided
+                    client.say(channel, "/me Invalid subcommand. ⚠ ⚠ ");
             }
         };
-        if ( args[0].toLowerCase() == prefix + "echo" && user.username.toLowerCase() === "quinndt" ) {
+        if ( args[0].toLowerCase() == prefix + "echo" && tags.username.toLowerCase() === "quinndt" ) {
             client.say(channel, args.join(" ").slice(prefix.length + 5)) // shit implemtation (maybe not?)
         };
     };
     // These are special commands.
-    if (args[0] === "test" && user.username.toLowerCase() !== "turtoise" && user.username.toLowerCase() !== "snappingbot") {client.say(channel, "icles");};
+    if (args[0] === "test" && tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot") {client.say(channel, "icles");};
     if (args[0].toLowerCase() == ">ping" || args[0].toLowerCase() == prefix + "ping") {
         duration_bot_uptime = moment.duration(moment().diff(bot_start_time));
         bot_uptime_text = duration_bot_uptime.seconds() + " seconds"

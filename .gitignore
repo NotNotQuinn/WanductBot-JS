@@ -3,3 +3,9 @@ node_modules/
 
 # dont leak 4Head
 oauth.json
+
+
+# settings files
+channels-to-join.json
+pings.json
+channels-to-join.json
