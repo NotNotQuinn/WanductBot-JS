@@ -15,6 +15,8 @@ var bot_uptime_text;
 var duration_bot_uptime;
 let _channels = ["#wanductbot", "#quinndt"]; // backup channels
 let pings;
+let send_eval_value = false;
+let invis_char = "󠀀";
 
 _channels = JSON.parse(fs.readFileSync('channels-to-join.json'));
 pings = JSON.parse(fs.readFileSync("pings.json"))[0]
@@ -45,9 +47,18 @@ client.on("emoteonly", (channel, enabled) => {
     };
 });
 
+client.on("subscription", (channel, username, method, message, userstate) => {
+    if (channel == "#michaelreeves") {
+        client.say("#quinndt", `${username} just subscribed with ${method}: ${message}`)
+    }
+});
+
 // handle messages
 client.on("message", (channel, tags, message, self) => {
     // Dont respond to messages from yourself
+    if (channel == "#michaelreeves") {
+        return;
+    }
     if (self) return;
     let args = message.split(" ");
 
@@ -56,11 +67,19 @@ client.on("message", (channel, tags, message, self) => {
 
         // Evel command to send js to chat, only I can use it
         if ( args[0].toLowerCase() == prefix + "eval" && tags.username.toLowerCase() == "quinndt") {
+            if (message.endsWith(invis_char)) {
+                message = message.slice(0, -1)
+                args = message.split(" ");
+            }
             try {evel_result = eval(args.slice(1).join(" "))} catch (e) {
-                client.say(channel, `Error in eval: ${e}`)
+                client.say(channel, `${e}`)
                 return;
             } 
-            client.say(channel, `Eval returned: ${evel_result}`)
+            if (send_eval_value) {
+                client.say(channel, `${evel_result}`)
+            } 
+        } else if (args[0].toLowerCase() == prefix + "eval") {
+            client.say(channel, "/me Not public");
         };
         // jsontest to see how args are parsed
         if ( args[0].toLowerCase() == prefix + "jsontest" && tags.username.toLowerCase() == "quinndt") {
@@ -101,7 +120,11 @@ client.on("message", (channel, tags, message, self) => {
         };
         // I need to finish this command, but I am putting it off because I will have to update it as a develop
         if ( args[0].toLowerCase() == prefix + "help" || args[0].toLowerCase() == prefix + "commands") {client.say(channel, "help command coming soon BroBalt")}
-        // bot command to tell the user about the bot and to join and part channels
+        // bot command to tell the user about the bot
+        if ( args[0].toLowerCase() == prefix + "bot" && tags.username.toLowerCase() !== "quinndt") {
+            client.say(channel, "I am a bot running NodeJS. If you want me in your chat ask @QuinnDT, he'll get you hooked up. ;) Repo: https://github.com/NotNotQuinn/WanductBot-JS");
+        };
+        // seperate bot command to join and part channels
         if ( args[0].toLowerCase() == prefix + "bot" && tags.username.toLowerCase() == "quinndt" ) {
             switch (args[1]) {
                 case "join":
@@ -130,12 +153,12 @@ client.on("message", (channel, tags, message, self) => {
                         });
                     };
                     break;
+                case undefined:
+                    client.say(channel, "You know what I am LUL");
+                    return;
                 default:
-                    if (tags.username.toLowerCase() == "quinndt") {
-                        client.say(channel, "/me Invalid subcommand. ⚠ ⚠ ")
-                    } else {
-                        client.say(channel, "/me Invalid subcommand. ⚠ ⚠ ");
-                    };
+                    client.say(channel, "/me Invalid subcommand ⚠ ⚠");
+                    
                     
             };
         };
@@ -150,6 +173,19 @@ client.on("message", (channel, tags, message, self) => {
                         client.say(channel, `SirSad Thats not a valid prefix, sorry. (only 1 character, no letters/numbers)`);
                     }
                     break;
+                case "eval_return":
+                    if (args[2] == undefined) {
+                        client.say(channel, "/me No value provided. ⚠ ⚠ ")
+                    } else if (args[2].toLowerCase() == "true") {
+                        send_eval_value = true;
+                        client.say(channel, ":) eval_return set to true")
+                    } else if (args[2].toLowerCase() == "false") {
+                        send_eval_value = false;
+                        client.say(channel, ":) eval_return set to false")
+                    } else {
+                        client.say(channel, `The only valid values for type "eval_return" are "true" and "false"`)
+                    };
+                    break;
                 case undefined:
                     client.say(channel, "/me No subcommand provided. ⚠ ⚠ ");
                     break;
@@ -158,7 +194,7 @@ client.on("message", (channel, tags, message, self) => {
             }
         };
         if ( args[0].toLowerCase() == prefix + "echo" && tags.username.toLowerCase() === "quinndt" ) {
-            client.say(channel, args.join(" ").slice(prefix.length + 5)) // shit implemtation (maybe not?)
+            client.say(channel, args.slice(1).join(" "))
         };
     };
     // "test" replies with "icles" its a little silly, but I like it
@@ -197,4 +233,4 @@ client.on("message", (channel, tags, message, self) => {
 });
 
 // Connect the client to the server..
-client.connect().catch();
+client.connect().catch(); // no idea if this .catch() actualy does anything
