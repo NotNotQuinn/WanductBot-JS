@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "curlrequest": "^1.0.1",
+    "minimist": "^1.2.5",
     "moment": "^2.29.1",
+    "mongodb": "^3.6.3",
     "promise": "^8.1.0",
     "tmi.js": "^1.5.0"
   }

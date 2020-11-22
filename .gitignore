@@ -6,6 +6,5 @@ oauth.json
 
 
 # settings files
-channels-to-join.json
-pings.json
-channels-to-join.json
+src/channels-to-join.json
+src/pings.json
