@@ -1,12 +1,9 @@
 const tmi = require("tmi.js");
 const moment = require("moment");
 var fs = require('fs');
-var Promise = require('promise');
 var curl = require('curlrequest');
 const querystring = require('querystring');
 var parseArgs = require('minimist')
-console.log("Thanks to @Nimmy0 on twitch for helping me out.");
-// He's a cool dude.
 
 // Dont know any better way to do this...
 let prefix = ">";
@@ -36,42 +33,33 @@ let options = {
     },  
     channels: _channels
 };
-console.log(`channels: ${options.channels.join(", ")}`)
+
+console.log(`Channels: ${options.channels.join(", ")}`)
 
 let client = new tmi.client(options);
-
-// 
-client.on("emoteonly", (channel, enabled) => {
-    if (enabled) {
-        client.say(channel, "TriHard")
-    };
-});
-
-client.on("subscription", (channel, username, method, message, userstate) => {
-    if (channel == "#michaelreeves") {
-        client.say("#quinndt", `${username} just subscribed with ${method}: ${message}`)
-    }
-});
-
 // handle messages
-client.on("message", (channel, tags, message, self) => {
+client.on("message", onMessageHandler);
+client.on("emoteonly", onEmoteonlyHandler);
+
+function onEmoteonlyHandler (channel, enabled) {
+    /* pepelaugh */
+};
+
+function onMessageHandler(channel, tags, message, self) {
     // Dont respond to messages from yourself
-    if (channel == "#michaelreeves") {
-        return;
-    }
     if (self) return;
     let args = message.split(" ");
 
     if( args[0].charAt(0).toLowerCase() == prefix) {
         // commands go here.
 
-        // Evel command to send js to chat, only I can use it
+        // Eval command to send js to chat, only I can use it (might remove this)
         if ( args[0].toLowerCase() == prefix + "eval" && tags.username.toLowerCase() == "quinndt") {
             if (message.endsWith(invis_char)) {
                 message = message.slice(0, -1)
                 args = message.split(" ");
             }
-            try {evel_result = eval(args.slice(1).join(" "))} catch (e) {
+            try {evel_result = eval(`(() => {${args.slice(1).join(" ")}})();`)} catch (e) {
                 client.say(channel, `${e}`)
                 return;
             } 
@@ -107,7 +95,7 @@ client.on("message", (channel, tags, message, self) => {
             });
         };
         // I always find thes interesting
-        if ( args[0].toLowerCase() == prefix + "randomfact") {
+        if ( args[0].toLowerCase() == prefix + "fact") {
             client.say(channel, "...")
             curl.request({url: "https://uselessfacts.jsph.pl/random.json?language=en"}, (err, data) => {
                 if (err) {
@@ -119,7 +107,11 @@ client.on("message", (channel, tags, message, self) => {
             });
         };
         // I need to finish this command, but I am putting it off because I will have to update it as a develop
-        if ( args[0].toLowerCase() == prefix + "help" || args[0].toLowerCase() == prefix + "commands") {client.say(channel, "help command coming soon BroBalt")}
+        if ( args[0].toLowerCase() == prefix + "help" || args[0].toLowerCase() == prefix + "commands") {
+            client.say(channel, `BroBalt Commands list: ${prefix}commands ${prefix}help ${prefix}ping ${prefix}google <query> ${prefix}fact ${prefix}8ball <question> ${prefix}bot`)
+            if (tags.username.toLowerCase() == "quinndt") 
+                client.say(channel, `BroBalt Your admin commands: ${prefix}eval <js> ${prefix}bot (join|part) <channel> ${prefix}set <type> <value> ${prefix}jsontest <args>`);
+        };
         // bot command to tell the user about the bot
         if ( args[0].toLowerCase() == prefix + "bot" && tags.username.toLowerCase() !== "quinndt") {
             client.say(channel, "I am a bot running NodeJS. If you want me in your chat ask @QuinnDT, he'll get you hooked up. ;) Repo: https://github.com/NotNotQuinn/WanductBot-JS");
@@ -162,7 +154,7 @@ client.on("message", (channel, tags, message, self) => {
                     
             };
         };
-        // not used much, used to set the prefix 
+        // not used much, used to set the prefix & eval return
         if ( args[0].toLowerCase() == prefix + "set" && tags.username.toLowerCase() == "quinndt") {
             switch (args[1]) {
                 case "prefix":
@@ -198,7 +190,7 @@ client.on("message", (channel, tags, message, self) => {
         };
     };
     // "test" replies with "icles" its a little silly, but I like it
-    if (args[0] === "test" && tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot") {client.say(channel, "icles");};
+    if (args[0] === "test" && tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot" && tags.username.toLowerCase() != "nimbot0") {client.say(channel, "icles");};
     // theres basicaly 2 ping  commands because im lazy
     if ((args[0].toLowerCase() == ">ping" || args[0].toLowerCase() == prefix + "ping") && (tags.username.toLowerCase() !== "turtoise" && tags.username.toLowerCase() !== "snappingbot")) {
         duration_bot_uptime = moment.duration(moment().diff(bot_start_time));
@@ -230,7 +222,7 @@ client.on("message", (channel, tags, message, self) => {
         };
         client.say(channel, `Pong! B) PowerUpR Current prefix: [ ${prefix} ]. ${client.channels.length} channels joined. Bot online for ${bot_uptime_text}.`);
     };
-});
+};
 
 // Connect the client to the server..
 client.connect().catch(); // no idea if this .catch() actualy does anything
